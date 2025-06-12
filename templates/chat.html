@@ -1,0 +1,21 @@
+<!doctype html>
+<title>PulseBot Chat</title>
+<h2>Ask PulseBot about Jesus</h2>
+<form id="chatForm">
+  <input type="text" id="message" placeholder="Your message" required/>
+  <button type="submit">Send</button>
+</form>
+<div id="responseArea"></div>
+<script>
+document.getElementById('chatForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const message = document.getElementById('message').value;
+  const res = await fetch('/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message })
+  });
+  const data = await res.json();
+  document.getElementById('responseArea').innerText = data.response;
+});
+</script>
