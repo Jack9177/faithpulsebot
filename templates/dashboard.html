@@ -1,14 +1,68 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>Welcome to PulseBot</title>
+  <meta charset="UTF-8">
+  <title>PulseBot Chat</title>
+  <style>
+    body {
+      background-color: #eef2ff;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .chat-container {
+      max-width: 600px;
+      margin: 60px auto;
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #4b0082;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4b0082;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #36005f;
+    }
+    #response {
+      margin-top: 20px;
+      font-style: italic;
+      color: #444;
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome to PulseBot 💬</h1>
-  <p>Need someone to talk to? Ask me anything about faith, Jesus, or life.</p>
-  {% if prayer %}
-    <h3>Your Prayer of Salvation</h3>
-    <p>{{ prayer }}</p>
-  {% endif %}
+  <div class="chat-container">
+    <h2>Talk to PulseBot</h2>
+    <input type="text" id="message" placeholder="Type your message here..." />
+    <button onclick="sendMessage()">Send</button>
+    <p id="response"></p>
+  </div>
+
+  <script>
+    async function sendMessage() {
+      const msg = document.getElementById("message").value;
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msg })
+      });
+      const data = await res.json();
+      document.getElementById("response").innerText = data.response;
+    }
+  </script>
 </body>
 </html>
