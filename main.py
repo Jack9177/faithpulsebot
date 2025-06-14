@@ -1,17 +1,28 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, send_file
 import os
-import csv
-import time
+import logging
+from datetime import datetime
 
+# App setup
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "fallback-secret-key")
+app.secret_key = os.getenv("SECRET_KEY", "fallback-secret")
 
-# Log file for chat messages
-LOG_FILE = 'chat_logs.csv'
+# Logging setup
+LOG_DIR = 'logs'
+LOG_FILE = os.path.join(LOG_DIR, 'pulsebot.log')
+os.makedirs(LOG_DIR, exist_ok=True)
+
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+# Routes
 
 @app.route('/')
-def landing_page():
-    return redirect('/chat-ui')
+def home():
+    return render_template('dashboard.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -19,62 +30,50 @@ def chat():
     message = data.get('message', '')
     response = f"PulseBot says: Jesus loves you and wants a relationship with you! You said: '{message}'"
 
-    # Log the chat message and response
-    with open(LOG_FILE, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow([time.strftime("%Y-%m-%d %H:%M:%S"), message, response])
-
+    logging.info(f"Chat message: {message}")
     return jsonify({"response": response})
 
-@app.route('/chat-ui')
-def chat_ui():
-    return render_template('chat.html')
-
-@app.route('/salvation')
-def salvation():
+@app.route('/pray')
+def pray():
     prayer = (
-        "Dear Jesus, I believe You died for my sins and rose again. "
-        "I ask You to come into my life, forgive me, and guide me each day. Amen."
+        "Dear Jesus, I acknowledge that I am a sinner. "
+        "I believe You died for my sins and rose again. "
+        "I invite You into my heart as my Lord and Savior. "
+        "Thank You for saving me. Amen."
     )
-    return jsonify({"prayer": prayer})
+    return render_template("dashboard.html", prayer=prayer)
 
 @app.route('/admin')
 def admin_login():
     if not session.get('logged_in'):
         return render_template('login.html')
-    return redirect('/admin-panel')
+    return redirect(url_for('admin_panel'))
 
 @app.route('/admin-login', methods=['POST'])
 def do_admin_login():
     if request.form['username'] == 'admin' and request.form['password'] == 'password':
         session['logged_in'] = True
-        return redirect('/admin-panel')
+        logging.info("Admin logged in")
+        return redirect(url_for('admin_panel'))
+    logging.warning("Failed admin login attempt")
     return 'Invalid credentials', 401
 
 @app.route('/admin-panel')
 def admin_panel():
     if not session.get('logged_in'):
-        return redirect('/admin')
+        return redirect(url_for('admin_login'))
     return render_template('admin.html')
 
-@app.route('/admin-logs')
-def admin_logs():
+@app.route('/admin/logs')
+def view_logs():
     if not session.get('logged_in'):
-        return redirect('/admin')
+        return redirect(url_for('admin_login'))
+    return send_file(LOG_FILE, mimetype='text/plain', as_attachment=False)
 
-    logs = []
-    try:
-        with open(LOG_FILE, newline='', encoding='utf-8') as f:
-            reader = csv.reader(f)
-            logs = list(reader)
-    except FileNotFoundError:
-        logs = []
-
-    return render_template('admin_logs.html', logs=logs)
-
+# Run
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port)
 
 
 # Entry point for Render
