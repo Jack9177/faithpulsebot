@@ -74,7 +74,23 @@ def view_logs():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+import openai
 
+# Load your OpenAI API Key from environment variables (set this in Render)
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def get_ai_response(message):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Or "gpt-4" if you have access
+            messages=[
+                {"role": "system", "content": "You are PulseBot, a helpful Christian faith assistant. Respond with love, clarity, and Scripture-based encouragement."},
+                {"role": "user", "content": message}
+            ]
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        return "I'm having trouble responding right now. Please try again later."
 
 # Entry point for Render
 if __name__ == '__main__':
