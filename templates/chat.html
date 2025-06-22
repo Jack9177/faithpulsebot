@@ -1,33 +1,110 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>FaithPulseBot</title>
-    <meta charset="utf-8">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f0f4f8; text-align: center; padding: 50px; }
-        .chat-box { width: 100%; max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px #ccc; }
-        input, button { width: 80%; padding: 10px; margin: 10px 0; font-size: 16px; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #eef1f5;
+            margin: 0; padding: 0;
+        }
+
+        .chat-container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .messages {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .bubble {
+            margin: 10px;
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            display: inline-block;
+            position: relative;
+        }
+
+        .user {
+            background: #d1e7dd;
+            align-self: flex-end;
+            float: right;
+            clear: both;
+        }
+
+        .bot {
+            background: #f8d7da;
+            float: left;
+            clear: both;
+        }
+
+        input, button {
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 16px;
+            width: 80%;
+        }
+
+        #typing {
+            font-style: italic;
+            font-size: 14px;
+            color: gray;
+            margin: 5px;
+        }
     </style>
 </head>
 <body>
-    <div class="chat-box">
-        <h2>🙏 Welcome to FaithPulseBot</h2>
-        <p>Ask me anything about Jesus, faith, or life.</p>
-        <input type="text" id="userInput" placeholder="Type your message here...">
+    <div class="chat-container">
+        <h2 style="text-align:center;">🙏 FaithPulseBot</h2>
+        <div class="messages" id="chatBox"></div>
+        <div id="typing"></div>
+        <input type="text" id="userInput" placeholder="Type a message...">
         <button onclick="sendMessage()">Send</button>
-        <div id="response"></div>
     </div>
 
     <script>
         async function sendMessage() {
-            const message = document.getElementById("userInput").value;
-            const res = await fetch("/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message })
-            });
-            const data = await res.json();
-            document.getElementById("response").innerText = data.response;
+            const userInput = document.getElementById("userInput");
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            appendMessage(message, "user");
+            userInput.value = "";
+
+            document.getElementById("typing").innerText = "PulseBot is typing...";
+
+            try {
+                const res = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await res.json();
+                appendMessage(data.response, "bot");
+            } catch (error) {
+                appendMessage("Sorry, I couldn't reach PulseBot. Try again later.", "bot");
+            } finally {
+                document.getElementById("typing").innerText = "";
+            }
+        }
+
+        function appendMessage(message, sender) {
+            const chatBox = document.getElementById("chatBox");
+            const bubble = document.createElement("div");
+            bubble.className = `bubble ${sender}`;
+            bubble.innerText = message;
+            chatBox.appendChild(bubble);
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
     </script>
 </body>
