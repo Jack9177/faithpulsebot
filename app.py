@@ -40,7 +40,7 @@ def get_ai_response(message):
 
 @app.route('/')
 def home():
-    return render_template('dashboard.html')
+    return render_template('chat.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
