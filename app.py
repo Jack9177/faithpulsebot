@@ -1,13 +1,13 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, send_file
 import os
 import logging
-from datetime import datetime
+import openai
 
-# App setup
+# === App Setup ===
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "fallback-secret")
 
-# Logging setup
+# === Logging Setup ===
 LOG_DIR = 'logs'
 LOG_FILE = os.path.join(LOG_DIR, 'pulsebot.log')
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -18,7 +18,25 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# Routes
+# === OpenAI Setup ===
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def get_ai_response(message):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are PulseBot, a helpful and loving Christian assistant who answers using Scripture, truth, and hope."},
+                {"role": "user", "content": message}
+            ]
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        print("OpenAI error:", e)
+        logging.error(f"OpenAI error: {e}")
+        return "Sorry, I'm having trouble answering right now. Please try again later."
+
+# === Routes ===
 
 @app.route('/')
 def home():
@@ -27,10 +45,13 @@ def home():
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
-    message = data.get('message', '')
-    response = f"PulseBot says: Jesus loves you and wants a relationship with you! You said: '{message}'"
+    message = data.get('message', '').strip()
 
-    logging.info(f"Chat message: {message}")
+    if not message:
+        return jsonify({"response": "Please enter a message."}), 400
+
+    response = get_ai_response(message)
+    logging.info(f"User: {message} | Response: {response}")
     return jsonify({"response": response})
 
 @app.route('/pray')
@@ -70,29 +91,7 @@ def view_logs():
         return redirect(url_for('admin_login'))
     return send_file(LOG_FILE, mimetype='text/plain', as_attachment=False)
 
-# Run
+# === App Runner ===
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-import openai
-
-# Load your OpenAI API Key from environment variables (set this in Render)
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-def get_ai_response(message):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Or "gpt-4" if you have access
-            messages=[
-                {"role": "system", "content": "You are PulseBot, a helpful Christian faith assistant. Respond with love, clarity, and Scripture-based encouragement."},
-                {"role": "user", "content": message}
-            ]
-        )
-        return response.choices[0].message['content'].strip()
-    except Exception as e:
-        return "I'm having trouble responding right now. Please try again later."
-
-# Entry point for Render
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)
